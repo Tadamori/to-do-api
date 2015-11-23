@@ -1,8 +1,10 @@
 var express = require('express');
-var app = express();
+var _ = require('underscore');
 var bodyParser = require('body-parser');
+
 //это метод heroku, чтобы установить нужный порт
 var PORT = process.env.PORT || 3000;
+var app = express();
 var todos = [];
 var todoNextId = 1;
 
@@ -18,13 +20,7 @@ app.get('/todos', function (req, res) {
 
 app.get('/todos/:id', function (req, res) { // нужно чтобы было именно :id 
 	var todoId = parseInt(req.params.id, 10); // присваиваем переменной значение которое пользователь ввел в строку и преображаем в число
-	var matchedTodo; // хранилище для совпадения
-
-	todos.forEach(function (todo) { // ищем совпадение 
-		if (todo.id === todoId) {
-			matchedTodo = todo;
-		}
-	});
+	var matchedTodo = _.findWhere(todos, {id: todoId}); // хранилище для совпадения
 
 	if (matchedTodo) { // если нашли, то отправляем респонс
 		res.json(matchedTodo);
@@ -34,7 +30,13 @@ app.get('/todos/:id', function (req, res) { // нужно чтобы было и
 });
 
 app.post('/todos', function (req, res) {
-	var body = req.body;
+	var body = _.pick(req.body, 'description', 'completed');
+
+	if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
+		return res.status(400).send();
+	}
+
+	body.description = body.description.trim();
 
 	body.id = todoNextId;
 	todoNextId++;
