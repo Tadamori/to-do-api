@@ -17,7 +17,16 @@ app.get('/', function (req, res) {
 
 // список всех туду
 app.get('/todos', function (req, res) {
-	res.json(todos);
+	var queryParams = req.query; // получаем доступ к квери которые ввел пользователь
+	var filteredTodos = todos;
+
+	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
+		filteredTodos = _.where(filteredTodos, {completed: true});
+	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
+		filteredTodos = _.where(filteredTodos, {completed: false});
+	} 
+
+	res.json(filteredTodos);
 });
 
 // конкретное туду по айди
@@ -85,7 +94,7 @@ app.put('/todos/:id', function (req, res) {
 		return res.status(400).send();
 	}
 
-	_.extend(matchedTodo, validAttributes);
+	_.extend(matchedTodo, validAttributes); // по неведомой мне причине это реально обоновляет код в массиве todos
 	res.send(matchedTodo);
 });
 
