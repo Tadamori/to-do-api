@@ -33,13 +33,11 @@ app.get('/todos', function(req, res) {
 		};
 	}
 
-	db.todo.findAll(
-		{
-			where: where
-		}
-	).then( function (todos) {
+	db.todo.findAll({
+		where: where
+	}).then(function(todos) {
 		res.json(todos);
-	}, function (e) {
+	}, function(e) {
 		res.status(500).send();
 	});
 
@@ -68,13 +66,13 @@ app.get('/todos', function(req, res) {
 app.get('/todos/:id', function(req, res) { // нужно чтобы было именно :id 
 	var todoId = parseInt(req.params.id, 10); // присваиваем переменной значение которое пользователь ввел в строку и преображаем в число
 
-	db.todo.findById(todoId).then( function (todo) {
+	db.todo.findById(todoId).then(function(todo) {
 		if (todo) {
 			res.json(todo.toJSON());
 		} else {
 			res.status(404).send();
 		}
-	}, function (e) {
+	}, function(e) {
 		res.status(500).send();
 	});
 
@@ -94,9 +92,9 @@ app.get('/todos/:id', function(req, res) { // нужно чтобы было и�
 app.post('/todos', function(req, res) {
 	var body = _.pick(req.body, 'description', 'completed');
 
-	db.todo.create(body).then( function (todo) {
+	db.todo.create(body).then(function(todo) {
 		res.json(todo.toJSON());
-	}, function (e) {
+	}, function(e) {
 		res.status(400).json(e);
 	});
 
@@ -121,15 +119,15 @@ app.delete('/todos/:id', function(req, res) {
 		where: {
 			id: todoId
 		}
-	}).then( function(rowsDeleted) {
+	}).then(function(rowsDeleted) {
 		if (rowsDeleted === 0) {
 			res.status(404).json({
 				error: "No todo with id"
 			});
 		} else {
-			res.status(204).send(); //204 - все прошло хорошо, но нечего возвращать
+			res.status(204).send().json; //204 - все прошло хорошо, но нечего возвращать
 		}
-	}, function (e) {
+	}, function(e) {
 		res.status(500).send();
 	});
 	// var matchedTodo = _.findWhere(todos, {
@@ -149,32 +147,52 @@ app.delete('/todos/:id', function(req, res) {
 // изменить существующее туду
 app.put('/todos/:id', function(req, res) {
 	var body = _.pick(req.body, 'description', 'completed');
-	var validAttributes = {};
+	var attributes = {};
 	var todoId = parseInt(req.params.id, 10);
-	var matchedTodo = _.findWhere(todos, {
-		id: todoId
+	// var matchedTodo = _.findWhere(todos, {
+	// 	id: todoId
+	// });
+
+	if (body.hasOwnProperty('completed')) {
+		attributes.completed = body.completed;
+	}
+
+	if (body.hasOwnProperty('description')) {
+		attributes.description = body.description;
+	}
+
+	db.todo.findById(todoId).then(function(todo) {
+		if (todo) {
+			todo.update(attributes).then(function(todo) {
+				res.json(todo.toJSON());
+			}, function(e) {
+				res.status(400).json(e); // 400 гворит о том что был введен не правильный синтаксис
+			});
+		} else {
+			res.status(404).send();
+		}
+	}, function() {
+		res.status(500).send();
 	});
 
-	if (!matchedTodo) {
-		res.status(400).json({
-			"error": "no todo found with that id"
-		});
-	}
 
-	if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-		validAttributes.completed = body.completed;
-	} else if (body.hasOwnProperty('completed')) {
-		return res.status(400).send();
-	}
-
-	if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
-		validAttributes.description = body.description;
-	} else if (body.hasOwnProperty('description')) {
-		return res.status(400).send();
-	}
-
-	_.extend(matchedTodo, validAttributes); // по неведомой мне причине это реально обоновляет код в массиве todos
-	res.send(matchedTodo);
+	// if (!matchedTodo) {
+	// 	res.status(400).json({
+	// 		"error": "no todo found with that id"
+	// 	});
+	// }
+	// if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+	// 	validAttributes.completed = body.completed;
+	// } else if (body.hasOwnProperty('completed')) {
+	// 	return res.status(400).send();
+	// }
+	// if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
+	// 	validAttributes.description = body.description;
+	// } else if (body.hasOwnProperty('description')) {
+	// 	return res.status(400).send();
+	// }
+	// _.extend(matchedTodo, validAttributes); // по неведомой мне причине это реально обоновляет код в массиве todos
+	// res.send(matchedTodo);
 });
 
 db.sequelize.sync().then(function() {
