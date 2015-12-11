@@ -2,6 +2,7 @@ var express = require('express');
 var _ = require('underscore');
 var bodyParser = require('body-parser');
 var db = require('./db.js');
+var bcrypt = require('bcrypt');
 
 //это метод heroku, чтобы установить нужный порт
 var PORT = process.env.PORT || 3000;
@@ -208,9 +209,19 @@ app.post('/users', function (req, res) {
 	});
 });
 
+app.post('/users/login', function (req, res) {
+	var body = _.pick(req.body, 'email', 'password');
+
+	db.user.isValid(body).then(function(user) {
+		res.json(user.toPublicJSON());
+	}, function(e) {
+		res.status(401).send();
+	});
+		
+});
 
 
-db.sequelize.sync().then(function() {
+db.sequelize.sync({force: true}).then(function() {
 	app.listen(PORT, function() {
 		console.log('Express listening on port ' + PORT + '!');
 	});
