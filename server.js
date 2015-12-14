@@ -211,10 +211,15 @@ app.post('/users', function (req, res) {
 
 app.post('/users/login', function (req, res) {
 	var body = _.pick(req.body, 'email', 'password');
-	var token = user.generateToken('authentication');
+	var token = db.user.generateToken('authentication');
 
 	db.user.isValid(body).then(function(user) {
-		res.header('Auth', token).json(user.toPublicJSON());
+		if (token) {
+			res.header('Auth', token).json(user.toPublicJSON());	
+		} else {
+			res.status(401).send();
+		}
+		
 	}, function(e) {
 		res.status(401).send();
 	});
