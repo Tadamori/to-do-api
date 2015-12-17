@@ -21,7 +21,9 @@ app.get('/', function(req, res) {
 // список всех туду
 app.get('/todos', middleware.requireAuthentication, function(req, res) {
 	var query = req.query; // получаем доступ к квери которые ввел пользователь
-	var where = {};
+	var where = {
+		userId: req.user.get('id')
+	};
 
 	if (query.hasOwnProperty('completed') && query.completed === 'true') {
 		where.completed = true;
@@ -68,7 +70,12 @@ app.get('/todos', middleware.requireAuthentication, function(req, res) {
 app.get('/todos/:id', middleware.requireAuthentication, function(req, res) { // нужно чтобы было именно :id 
 	var todoId = parseInt(req.params.id, 10); // присваиваем переменной значение которое пользователь ввел в строку и преображаем в число
 
-	db.todo.findById(todoId).then(function(todo) {
+	db.todo.findOne({
+		where: {
+			userId: req.user.get('id'),
+			id: todoId
+		}
+	}).then(function(todo) {
 		if (todo) {
 			res.json(todo.toJSON());
 		} else {
@@ -96,7 +103,7 @@ app.post('/todos', middleware.requireAuthentication, function(req, res) {
 
 	db.todo.create(body).then(function(todo) {
 		req.user.addTodo(todo).then( function () {
-			return todo.reload();
+			return todo.reload(); // требуется перезагрузка чтобы внести изменения в базу
 		}).then(function (todo) {
 			res.json(todo.toJSON());
 		});
@@ -124,6 +131,7 @@ app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 
 	db.todo.destroy({
 		where: {
+			userId: req.user.get('id'),
 			id: todoId
 		}
 	}).then(function(rowsDeleted) {
@@ -168,7 +176,12 @@ app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 		attributes.description = body.description;
 	}
 
-	db.todo.findById(todoId).then(function(todo) {
+	db.todo.findOne({
+		where: {
+			userId: req.user.get('id'),
+			id: todoId
+		}
+	}).then(function(todo) {
 		if (todo) {
 			todo.update(attributes).then(function(todo) {
 				res.json(todo.toJSON());
